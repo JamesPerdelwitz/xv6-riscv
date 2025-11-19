@@ -105,3 +105,20 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+
+// // My Addition
+// extern int priority_fork(int priority);
+
+// uint64
+// sys_priority_fork(void)
+// {
+//   // int priority;
+
+//   // Check that the priority value is between 0 and 19
+//   if (priority < 0 || priority > 19) {
+//     return -1;
+//   }
+
+//   return priority_fork(priority);
+
+// }
