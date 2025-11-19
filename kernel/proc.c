@@ -12,6 +12,9 @@ struct proc proc[NPROC];
 
 struct proc *initproc;
 
+// My Addition
+int mode = 0;       // Indicates whether the system is in debug or run mode.
+
 int nextpid = 1;
 struct spinlock pid_lock;
 
@@ -264,6 +267,73 @@ kfork(void)
   if((np = allocproc()) == 0){
     return -1;
   }
+
+  // My addition
+  np->priority = 10;
+  np->num_epoch_slots = 0;
+
+  // Copy user memory from parent to child.
+  if(uvmcopy(p->pagetable, np->pagetable, p->sz) < 0){
+    freeproc(np);
+    release(&np->lock);
+    return -1;
+  }
+
+  np->sz = p->sz;
+
+  // copy saved user registers.
+  *(np->trapframe) = *(p->trapframe);
+
+  // Cause fork to return 0 in the child.
+  np->trapframe->a0 = 0;
+
+  // increment reference counts on open file descriptors.
+  for(i = 0; i < NOFILE; i++)
+    if(p->ofile[i])
+      np->ofile[i] = filedup(p->ofile[i]);
+  np->cwd = idup(p->cwd);
+
+  safestrcpy(np->name, p->name, sizeof(p->name));
+
+  pid = np->pid;
+
+  release(&np->lock);
+
+  acquire(&wait_lock);
+  np->parent = p;
+  release(&wait_lock);
+
+  acquire(&np->lock);
+  np->state = RUNNABLE;
+  release(&np->lock);
+
+  return pid;
+}
+
+// My Addition
+// Priority fork functions the same as fork but the accepted argument 
+// is set as the priority value in the PCB of the new process.
+int
+priority_fork(int priority)
+{
+  int i, pid;
+  struct proc *np;
+  struct proc *p = myproc();
+
+  // Allocate process.
+  if((np = allocproc()) == 0){
+    return -1;
+  }
+
+  // Check that the value of priority is within the range of 0 to 19, throw error if out
+  // of range
+  if (priority < 0 || priority > 19) {
+    return -1;
+  }
+
+    // Set the child priority
+  np->priority = priority;
+  np->num_epoch_slots = 0;
 
   // Copy user memory from parent to child.
   if(uvmcopy(p->pagetable, np->pagetable, p->sz) < 0){
