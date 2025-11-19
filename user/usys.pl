@@ -42,3 +42,6 @@ entry("getpid");
 entry("sbrk");
 entry("pause");
 entry("uptime");
+# My Addition
+entry("debug");
+entry("priority_fork");
